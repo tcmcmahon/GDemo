@@ -4,7 +4,7 @@ import {useEffect, useState} from "react";
 import {ColumnsType} from "antd/es/table";
 import {Button, Form, Input, message, Modal, Select, Space, Table, Tag} from "antd";
 import { faker } from '@faker-js/faker';
-import {User} from ".prisma/client";
+import {Post} from ".prisma/client";
 const inter = Inter({ subsets: ['latin'] })
 
 const layout = {
