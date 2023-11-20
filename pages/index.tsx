@@ -1,11 +1,11 @@
-
-import { Inter } from 'next/font/google'
-import {useEffect, useState} from "react";
-import {ColumnsType} from "antd/es/table";
-import {Button, Form, Input, message, Modal, Select, Space, Table, Tag} from "antd";
+import { Inter } from 'next/font/google';
+import { useEffect, useState } from 'react';
+import { ColumnsType } from 'antd/es/table';
+import { Button, Form, Input, message, Modal, Space, Table } from 'antd';
 import { faker } from '@faker-js/faker';
-import {Post} from ".prisma/client";
-const inter = Inter({ subsets: ['latin'] })
+import { Post } from '.prisma/client'; // Import the Post model instead of User
+
+const inter = Inter({ subsets: ['latin'] });
 
 const layout = {
   labelCol: { span: 8 },
@@ -17,53 +17,60 @@ const tailLayout = {
 };
 
 export default function Home() {
-  const [users, setUsers] = useState<User[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]); // Use posts instead of users
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
 
   const onFinish = async (values: any) => {
     console.log(values);
     setIsModalOpen(false);
-    fetch('/api/create_user', {
+    fetch('/api/create_post', { // Update the API endpoint to create a post
       method: 'POST',
       headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(values)
-    }).then(async response => {
-      if (response.status === 200) {
-        const user = await response.json();
-        message.success('created user ' + user.name);
-        setUsers([...users, user]);
-
-      } else message.error(
-          `Failed to create user:\n ${JSON.stringify(await response.json())}`);
-    }).catch(res=>{message.error(res)})
+      body: JSON.stringify(values),
+    })
+      .then(async (response) => {
+        if (response.status === 200) {
+          const post = await response.json();
+          message.success('created post ' + post.title);
+          setPosts([...posts, post]);
+        } else
+          message.error(
+            `Failed to create post:\n ${JSON.stringify(await response.json())}`
+          );
+      })
+      .catch((res) => {
+        message.error(res);
+      });
   };
 
-  const onDelete = async (user: any) => {
-    const {id} = user;
+  const onDelete = async (post: any) => {
+    const { id } = post;
     setIsModalOpen(false);
-    fetch('/api/delete_user', {
+    fetch('/api/delete_post', { // Update the API endpoint to delete a post
       method: 'POST',
       headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify({id})
-    }).then(async response => {
-      if (response.status === 200) {
-        await response.json();
-        message.success('Deleted user ' + user.name);
-        setUsers(users.filter(u=> u.id !== id ));
-
-      } else message.error(
-          `Failed to delete user:\n ${user.name}`);
-    }).catch(res=>{message.error(res)})
+      body: JSON.stringify({ id }),
+    })
+      .then(async (response) => {
+        if (response.status === 200) {
+          await response.json();
+          message.success('Deleted post ' + post.title);
+          setPosts(posts.filter((p) => p.id !== id));
+        } else message.error(`Failed to delete post:\n ${post.title}`);
+      })
+      .catch((res) => {
+        message.error(res);
+      });
   };
 
-  const columns: ColumnsType<User> = [
+  const columns: ColumnsType<Post> = [
     {
       title: 'ID',
       dataIndex: 'id',
@@ -71,54 +78,49 @@ export default function Home() {
       render: (text) => <a>{text}</a>,
     },
     {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
+      title: 'Title',
+      dataIndex: 'title',
+      key: 'title',
       render: (text) => <a>{text}</a>,
     },
     {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email',
+      title: 'Content',
+      dataIndex: 'content',
+      key: 'content',
     },
     {
-      title: 'Address',
-      dataIndex: 'address',
-      key: 'address',
+      title: 'Published',
+      dataIndex: 'published',
+      key: 'published',
+      render: (published) => <span>{published ? 'Yes' : 'No'}</span>,
     },
-
     {
       title: 'Action',
       key: 'action',
       render: (_, record) => (
-          <Space size="middle">
-            <a onClick={()=>onDelete(record)}>Delete</a>
-          </Space>
+        <Space size="middle">
+          <a onClick={() => onDelete(record)}>Delete</a>
+        </Space>
       ),
     },
   ];
-
 
   const onReset = () => {
     form.resetFields();
   };
 
   const onFill = () => {
-    const firstName = faker.person.firstName();
-    const lastName = faker.person.lastName();
-    const email = faker.internet.email({ firstName, lastName });
-    const street = faker.location.streetAddress();
-    const city = faker.location.city();
-    const state  = faker.location.state({ abbreviated: true });
-    const zip = faker.location.zipCode()
+    const title = faker.lorem.sentence();
+    const content = faker.lorem.paragraph();
+    const published = faker.random.boolean();
 
     form.setFieldsValue({
-      name: `${firstName} ${lastName}`,
-      email: email,
-      address:
-          `${street}, ${city}, ${state}, US, ${zip}`
+      title: title,
+      content: content,
+      published: published,
     });
   };
+
   const showModal = () => {
     setIsModalOpen(true);
     form.resetFields();
@@ -128,59 +130,72 @@ export default function Home() {
     setIsModalOpen(false);
     form.resetFields();
   };
-  useEffect(()=>{
-    fetch('api/all_user', {method: "GET"})
-        .then(res => {
-          res.json().then(
-              (json=> {setUsers(json)})
-          )
-        })
+
+  useEffect(() => {
+    fetch('api/all_posts', { method: 'GET' }) // Update the API endpoint to fetch all posts
+      .then((res) => {
+        res.json().then((json) => {
+          setPosts(json);
+        });
+      });
   }, []);
 
-  if (!users) return "Give me a second";
+  if (!posts) return 'Give me a second';
 
-  return  <>
-    <Button type="primary" onClick={showModal}>
-      Add User
-    </Button>
-    <Modal title="Basic Modal" onCancel={handleCancel}
-           open={isModalOpen} footer={null}  width={800}>
-      <Form
+  return (
+    <>
+      <Button type="primary" onClick={showModal}>
+        Add Post
+      </Button>
+      <Modal
+        title="Basic Modal"
+        onCancel={handleCancel}
+        open={isModalOpen}
+        footer={null}
+        width={800}
+      >
+        <Form
           {...layout}
           form={form}
           name="control-hooks"
           onFinish={onFinish}
           style={{ maxWidth: 600 }}
-      >
-        <Form.Item name="name" label="Name" rules={[{ required: true }]}>
-          <Input />
-        </Form.Item>
-        <Form.Item name="email" label="email" rules={[{ required: true }]}>
-          <Input />
-        </Form.Item>
-        <Form.Item name="address" label="address" rules={[{ required: true }]}>
-          <Input />
-        </Form.Item>
+        >
+          <Form.Item name="title" label="Title" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="content"
+            label="Content"
+            rules={[{ required: true }]}
+          >
+            <Input.TextArea />
+          </Form.Item>
+          <Form.Item
+            name="published"
+            label="Published"
+            rules={[{ required: true }]}
+          >
+            <Input />
+          </Form.Item>
 
-        <Form.Item {...tailLayout} >
-          <Button type="primary" htmlType="submit">
-            Submit
-          </Button>
-          <Button htmlType="button" onClick={onReset}>
-            Reset
-          </Button>
-          <Button  htmlType="button" onClick={onFill}>
-            Fill form
-          </Button>
-          <Button  htmlType="button" onClick={handleCancel}>
-            Cancel
-          </Button>
-        </Form.Item>
-      </Form>
-    </Modal>
-    {/*<p>{JSON.stringify(users)}</p>*/}
-    <Table columns={columns} dataSource={users} />;
-  </>;
-
-
+          <Form.Item {...tailLayout}>
+            <Button type="primary" htmlType="submit">
+              Submit
+            </Button>
+            <Button htmlType="button" onClick={onReset}>
+              Reset
+            </Button>
+            <Button htmlType="button" onClick={onFill}>
+              Fill form
+            </Button>
+            <Button htmlType="button" onClick={handleCancel}>
+              Cancel
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+      <Table columns={columns} dataSource={posts} />
+    </>
+  );
 }
